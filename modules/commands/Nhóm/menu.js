@@ -41,11 +41,11 @@ module.exports.run = async function ({ api, event, args }) {
 		} else {
 			if (args[0] == "all") {
 				const data = cmds.values();
-				var txt = "[ đ™ˆđ™đ™£đ™ª đ˜½đ™¤đ™©đŸ’¢]\nâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\n",
+				var txt = "[ 𝙈𝙚𝙣𝙪 𝘽𝙤𝙩💢]\n───────────────\n",
 					count = 0;
 				for (const cmd of data)
 					txt += `|â€º ${++count}. ${cmd.config.name} | ${cmd.config.description}\n`;
-				txt += `â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\n|â€º â³ Tá»± Ä‘á»™ng gá»¡ tin nháº¯n sau: ${autoUnsend.timeOut}s`;
+				txt += `───────────────\n|› ⏳ Tự động gỡ tin nhắn sau: ${autoUnsend.timeOut}s`;
 				return send(
 					{
 						body: txt,
@@ -71,7 +71,7 @@ module.exports.run = async function ({ api, event, args }) {
 				const similarly = findBestMatch(args.join(" "), arrayCmds);
 				if (similarly.bestMatch.rating >= 0.3)
 					return send(
-						` "${args.join(" ")}" lĂ  lá»‡nh gáº§n giá»‘ng lĂ  "${similarly.bestMatch.target}" ?`,
+						` "${args.join(" ")}"là lệnh gần giống là "${similarly.bestMatch.target}" ?`,
 						tid,
 						mid,
 					);
@@ -79,11 +79,11 @@ module.exports.run = async function ({ api, event, args }) {
 		}
 	} else {
 		const data = commandsGroup();
-		var txt = "[ đ™ˆđ™đ™£đ™ª đ˜½đ™¤đ™©đŸ’¢]\nâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\n",
+		var txt = "[ 𝙈𝙚𝙣𝙪 𝘽𝙤𝙩💢]\n───────────────\n",
 			count = 0;
 		for (const { commandCategory, commandsName } of data)
-			txt += `|â€º ${++count}. ${commandCategory} || cĂ³ ${commandsName.length} lá»‡nh\n`;
-		txt += `â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\n|â€º đŸ“ Tá»•ng cĂ³: ${global.client.commands.size} lá»‡nh\n|â€º â° Time: ${time}\n|â€º đŸ” Reply tá»« 1 Ä‘áº¿n ${data.length} Ä‘á»ƒ chá»n\n|â€º â³ Tá»± Ä‘á»™ng gá»¡ tin nháº¯n sau: ${autoUnsend.timeOut}s`;
+			txt += `|› ${++count}. ${commandCategory} || có ${commandsName.length} lệnh\n`;
+		 txt += `───────────────\n|› 📝 Tổng có: ${global.client.commands.size} lệnh\n|› ⏰ Time: ${time}\n|› 🔎 Reply từ 1 đến ${data.length} để chọn\n|› ⏳ Tự động gỡ tin nhắn sau:
 		return send(
 			{ body: txt },
 			tid,
@@ -108,7 +108,7 @@ module.exports.handleReply = async function ({ handleReply: $, api, event }) {
 	const { threadID: tid, messageID: mid, senderID: sid, args } = event;
 
 	if (sid != $.author) {
-		const msg = `â›” CĂºt ra chá»— khĂ¡c`;
+		const msg = `⛔ Cút ra chỗ khác`;
 		return send(msg, tid, mid);
 	}
 
@@ -116,19 +116,19 @@ module.exports.handleReply = async function ({ handleReply: $, api, event }) {
 		case "infoGr": {
 			var data = $.data[+args[0] - 1];
 			if (data == undefined) {
-				const txt = `â "${args[0]}" khĂ´ng náº±m trong sá»‘ thá»© tá»± menu`;
+				const txt = `❎ "${args[0]}" không nằm trong số thứ tự menu`;
 				const msg = txt;
 				return send(msg, tid, mid);
 			}
 
 			un($.messageID);
-			var txt = `=== [ ${data.commandCategory} ] ===\nâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\n`,
+			var txt = `=== [ ${data.commandCategory} ] ===\n───────────────\n`,
 				count = 0;
 			for (const name of data.commandsName) {
 				const cmdInfo = global.client.commands.get(name).config;
-				txt += `|â€º ${++count}. ${name} | ${cmdInfo.description}\n`;
+				txt += `|› ${++count}. ${name} | ${cmdInfo.description}\n`;
 			}
-			txt += `â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\n|â€º đŸ” Reply tá»« 1 Ä‘áº¿n ${data.commandsName.length} Ä‘á»ƒ chá»n\n|â€º â³ Tá»± Ä‘á»™ng gá»¡ tin nháº¯n sau: ${autoUnsend.timeOut}s\n|â€º đŸ“ DĂ¹ng ${prefix(tid)}help + tĂªn lá»‡nh Ä‘á»ƒ xem chi tiáº¿t cĂ¡ch sá»­ dá»¥ng lá»‡nh`;
+			txt += `───────────────\n|› 🔎 Reply từ 1 đến ${data.commandsName.length} để chọn\n|› ⏳ Tự động gỡ tin nhắn sau: ${autoUnsend.timeOut}s\n|› 📝 Dùng ${prefix(tid)}help + tên lệnh để xem chi tiết cách sử dụng lệnh`;
 			return send({ body: txt }, tid, (a, b) => {
 				global.client.handleReply.push({
 					name: this.config.name,
@@ -144,7 +144,7 @@ module.exports.handleReply = async function ({ handleReply: $, api, event }) {
 		case "infoCmds": {
 			var data = global.client.commands.get($.data[+args[0] - 1]);
 			if (typeof data != "object") {
-				const txt = `â ï¸ "${args[0]}" khĂ´ng náº±m trong sá»‘ thá»© tá»± menu`;
+				const txt = `⚠️ "${args[0]}" không nằm trong số thứ tự menu`;
 				const msg = txt;
 				return send(msg, tid, mid);
 			}
@@ -173,17 +173,17 @@ function commandsGroup() {
 }
 
 function infoCmds(a) {
-	return `[ INFO - COMMANDS ]\nâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\n|â€º đŸ“” TĂªn lá»‡nh: ${a.name}\n|â€º đŸŒ´ PhiĂªn báº£n : ${a.version}\n|â€º đŸ” Quyá»n háº¡n : ${premssionTxt(a.hasPermssion)}\n|â€º đŸ‘¤ TĂ¡c giáº£ : ${a.credits}\n|â€º đŸŒ¾ MĂ´ táº£ : ${a.description}\n|â€º đŸ“ Thuá»™c nhĂ³m : ${a.commandCategory}\n|â€º đŸ“ CĂ¡ch dĂ¹ng : ${a.usages}\n|â€º â³ Thá»i gian chá» : ${a.cooldowns} giĂ¢y\n`;
+	return `[ INFO - COMMANDS ]\n──────────────────\n|› 📔 Tên lệnh: ${a.name}\n|› 🌴 Phiên bản : ${a.version}\n|› 🔐 Quyền hạn : ${premssionTxt(a.hasPermssion)}\n|› 👤 Tác giả : ${a.credits}\n|› 🌾 Mô tả : ${a.description}\n|› 📎 Thuộc nhóm : ${a.commandCategory}\n|› 📝 Cách dùng : ${a.usages}\n|› ⏳ Thời gian chờ : ${a.cooldowns} giây\n`;
 }
 
 function premssionTxt(a) {
 	return a == 0
-		? "ThĂ nh ViĂªn"
+		? "Thành Viên"
 		: a == 1
-			? "Quáº£n Trá»‹ ViĂªn NhĂ³m"
+			? "Quản Trị Viên Nhóm"
 			: a == 2
 				? "ADMINBOT"
-				: "NgÆ°á»i Äiá»u HĂ nh Bot";
+				: "Người Điều Hành Bot";
 }
 
 function prefix(a) {
