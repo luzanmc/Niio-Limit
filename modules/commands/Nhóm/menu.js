@@ -1,103 +1,199 @@
-this.config = {
-    name: "menu",
-    version: "1.1.1",
-    hasPermssion: 0,
-    credits: "DC-Nam mod by Niio-team",
-    description: "Xem danh sách lệnh và info",
-    commandCategory: "Nhóm",
-    usages: "[tên lệnh/all]",
-    cooldowns: 0
+module.exports.config = {
+	name: "menu",
+	version: "1.1.1",
+	hasPermssion: 0,
+	credits: "DC-Nam mod by Vtuan & DongDev fix",
+	description: "Xem danh sĂ¡ch nhĂ³m lá»‡nh, thĂ´ng tin lá»‡nh",
+	commandCategory: "NhĂ³m",
+	usages: "[...name commands|all]",
+	cooldowns: 5,
+	usePrefix: false,
+	images: [],
+	envConfig: {
+		autoUnsend: {
+			status: true,
+			timeOut: 60,
+		},
+	},
 };
-this.languages = {
-    "vi": {},
-    "en": {}
-}
-this.run = async function({
-    api,
-    event,
-    args
-}) {
-    const {
-        threadID: tid,
-        messageID: mid,
-        senderID: sid
-    } = event;
-    var type = !args[0] ? "" : args[0].toLowerCase();
-    var msg = "";
-    const cmds = global.client.commands;
-    const TIDdata = global.data.threadData.get(tid) || {};
-    const moment = require("moment-timezone");
-    var thu = moment.tz('Asia/Ho_Chi_Minh').format('dddd');
-    if (thu == 'Sunday') thu = 'Chủ Nhật';
-    if (thu == 'Monday') thu = 'Thứ Hai';
-    if (thu == 'Tuesday') thu = 'Thứ Ba';
-    if (thu == 'Wednesday') thu = 'Thứ Tư';
-    if (thu == "Thursday") thu = 'Thứ Năm';
-    if (thu == 'Friday') thu = 'Thứ Sáu';
-    if (thu == 'Saturday') thu = 'Thứ Bảy';
-    const time = moment.tz("Asia/Ho_Chi_Minh").format("HH:mm:s | DD/MM/YYYY");
-    const hours = moment.tz("Asia/Ho_Chi_Minh").format("HH");
-    const admin = config.ADMINBOT;
-    const NameBot = config.BOTNAME;
-    const version = config.version;
-    var prefix = TIDdata.PREFIX || global.config.PREFIX;
-    if (type == "all") {
-        const commandsList = Array.from(cmds.values()).map((cmd, index) => {
-            return `${index + 1}. ${cmd.config.name}\n📝 Mô tả: ${cmd.config.description}\n\n`;
-        }).join('');
-        return api.sendMessage(commandsList, tid, mid);
-    }
 
-    if (type) {
-        const command = Array.from(cmds.values()).find(cmd => cmd.config.name.toLowerCase() === type);
-        if (!command) {
-            const stringSimilarity = require('string-similarity');
-            const commandName = args.shift().toLowerCase() || "";
-            const commandValues = cmds['keys']();
-            const checker = stringSimilarity.findBestMatch(commandName, commandValues);
-            if (checker.bestMatch.rating >= 0.5) command = client.commands.get(checker.bestMatch.target);
-            msg = `⚠️ Không tìm thấy lệnh '${type}' trong hệ thống.\n📌 Lệnh gần giống được tìm thấy '${checker.bestMatch.target}'`;
-            return api.sendMessage(msg, tid, mid);
-        }
-        const cmd = command.config;
-        msg = `[ HƯỚNG DẪN SỬ DỤNG ]\n\n📜 Tên lệnh: ${cmd.name}\n🕹️ Phiên bản: ${cmd.version}\n🔑 Quyền Hạn: ${TextPr(cmd.hasPermssion)}\n📝 Mô Tả: ${cmd.description}\n🏘️ Nhóm: ${cmd.commandCategory}\n📌 Cách Dùng: ${cmd.usages}\n⏳ Cooldowns: ${cmd.cooldowns}s`;
-        return api.sendMessage(msg, tid, mid);
-    } else {
-        const commandsArray = Array.from(cmds.values()).map(cmd => cmd.config);
-        const array = [];
-        commandsArray.forEach(cmd => {
-            const { commandCategory, name: nameModule } = cmd;
-            const find = array.find(i => i.cmdCategory == commandCategory);
-            if (!find) {
-                array.push({
-                    cmdCategory: commandCategory,
-                    nameModule: [nameModule]
-                });
-            } else {
-                find.nameModule.push(nameModule);
-            }
-        });
-        array.sort(S("nameModule"));
-        array.forEach(cmd => {
-if (['ADMIN','NO PREFIX'].includes(cmd.cmdCategory.toUpperCase()) && !global.config.ADMINBOT.includes(sid)) return
-            msg += `[ ${cmd.cmdCategory.toUpperCase()} ]\n📝 Tổng lệnh: ${cmd.nameModule.length} lệnh\n${cmd.nameModule.join(", ")}\n\n`;
-        });
-        msg += `📝 Tổng số lệnh: ${cmds.size} lệnh\n👤 Tổng số admin bot: ${admin.length}\n👾 Tên Bot: ${NameBot}\n🕹️ Phiên bản: ${version}\n⏰ Hôm nay là: ${thu}\n⏱️ Thời gian: ${time}\n${prefix}help + tên lệnh để xem chi tiết\n${prefix}help + all để xem tất cả lệnh`;
-        return api.sendMessage(msg, tid, mid);
-    }
+const { autoUnsend = this.config.envConfig.autoUnsend } =
+	global.config == undefined
+		? {}
+		: global.config.menu == undefined
+			? {}
+			: global.config.menu;
+const { compareTwoStrings, findBestMatch } = require("string-similarity");
+const { readFileSync, writeFileSync, existsSync } = require("fs-extra");
+
+module.exports.run = async function ({ api, event, args }) {
+	const moment = require("moment-timezone");
+	const { sendMessage: send, unsendMessage: un } = api;
+	const { threadID: tid, messageID: mid, senderID: sid } = event;
+	const cmds = global.client.commands;
+
+	const time = moment.tz("Asia/Ho_Chi_Minh").format("HH:mm:ss || DD/MM/YYYY");
+
+	if (args.length >= 1) {
+		if (typeof cmds.get(args.join(" ")) == "object") {
+			const body = infoCmds(cmds.get(args.join(" ")).config);
+			return send(body, tid, mid);
+		} else {
+			if (args[0] == "all") {
+				const data = cmds.values();
+				var txt = "[ đ™ˆđ™đ™£đ™ª đ˜½đ™¤đ™©đŸ’¢]\nâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\n",
+					count = 0;
+				for (const cmd of data)
+					txt += `|â€º ${++count}. ${cmd.config.name} | ${cmd.config.description}\n`;
+				txt += `â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\n|â€º â³ Tá»± Ä‘á»™ng gá»¡ tin nháº¯n sau: ${autoUnsend.timeOut}s`;
+				return send(
+					{
+						body: txt,
+						attachment:
+							global.ytb_rst2.length > 0
+								? global.ytb_rst2.splice(0, 1)
+								: undefined,
+					},
+					tid,
+					(a, b) =>
+						autoUnsend.status
+							? setTimeout(
+									(v1) => un(v1),
+									1000 * autoUnsend.timeOut,
+									b.messageID,
+								)
+							: "",
+				);
+			} else {
+				const cmdsValue = cmds.values();
+				const arrayCmds = [];
+				for (const cmd of cmdsValue) arrayCmds.push(cmd.config.name);
+				const similarly = findBestMatch(args.join(" "), arrayCmds);
+				if (similarly.bestMatch.rating >= 0.3)
+					return send(
+						` "${args.join(" ")}" lĂ  lá»‡nh gáº§n giá»‘ng lĂ  "${similarly.bestMatch.target}" ?`,
+						tid,
+						mid,
+					);
+			}
+		}
+	} else {
+		const data = commandsGroup();
+		var txt = "[ đ™ˆđ™đ™£đ™ª đ˜½đ™¤đ™©đŸ’¢]\nâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\n",
+			count = 0;
+		for (const { commandCategory, commandsName } of data)
+			txt += `|â€º ${++count}. ${commandCategory} || cĂ³ ${commandsName.length} lá»‡nh\n`;
+		txt += `â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\n|â€º đŸ“ Tá»•ng cĂ³: ${global.client.commands.size} lá»‡nh\n|â€º â° Time: ${time}\n|â€º đŸ” Reply tá»« 1 Ä‘áº¿n ${data.length} Ä‘á»ƒ chá»n\n|â€º â³ Tá»± Ä‘á»™ng gá»¡ tin nháº¯n sau: ${autoUnsend.timeOut}s`;
+		return send(
+			{ body: txt },
+			tid,
+			(a, b) => {
+				global.client.handleReply.push({
+					name: this.config.name,
+					messageID: b.messageID,
+					author: sid,
+					case: "infoGr",
+					data,
+				});
+				if (autoUnsend.status)
+					setTimeout((v1) => un(v1), 5000 * autoUnsend.timeOut, b.messageID);
+			},
+			mid,
+		);
+	}
+};
+
+module.exports.handleReply = async function ({ handleReply: $, api, event }) {
+	const { sendMessage: send, unsendMessage: un } = api;
+	const { threadID: tid, messageID: mid, senderID: sid, args } = event;
+
+	if (sid != $.author) {
+		const msg = `â›” CĂºt ra chá»— khĂ¡c`;
+		return send(msg, tid, mid);
+	}
+
+	switch ($.case) {
+		case "infoGr": {
+			var data = $.data[+args[0] - 1];
+			if (data == undefined) {
+				const txt = `â "${args[0]}" khĂ´ng náº±m trong sá»‘ thá»© tá»± menu`;
+				const msg = txt;
+				return send(msg, tid, mid);
+			}
+
+			un($.messageID);
+			var txt = `=== [ ${data.commandCategory} ] ===\nâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\n`,
+				count = 0;
+			for (const name of data.commandsName) {
+				const cmdInfo = global.client.commands.get(name).config;
+				txt += `|â€º ${++count}. ${name} | ${cmdInfo.description}\n`;
+			}
+			txt += `â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\n|â€º đŸ” Reply tá»« 1 Ä‘áº¿n ${data.commandsName.length} Ä‘á»ƒ chá»n\n|â€º â³ Tá»± Ä‘á»™ng gá»¡ tin nháº¯n sau: ${autoUnsend.timeOut}s\n|â€º đŸ“ DĂ¹ng ${prefix(tid)}help + tĂªn lá»‡nh Ä‘á»ƒ xem chi tiáº¿t cĂ¡ch sá»­ dá»¥ng lá»‡nh`;
+			return send({ body: txt }, tid, (a, b) => {
+				global.client.handleReply.push({
+					name: this.config.name,
+					messageID: b.messageID,
+					author: sid,
+					case: "infoCmds",
+					data: data.commandsName,
+				});
+				if (autoUnsend.status)
+					setTimeout((v1) => un(v1), 5000 * autoUnsend.timeOut, b.messageID);
+			});
+		}
+		case "infoCmds": {
+			var data = global.client.commands.get($.data[+args[0] - 1]);
+			if (typeof data != "object") {
+				const txt = `â ï¸ "${args[0]}" khĂ´ng náº±m trong sá»‘ thá»© tá»± menu`;
+				const msg = txt;
+				return send(msg, tid, mid);
+			}
+
+			const { config = {} } = data || {};
+			un($.messageID);
+			const msg = infoCmds(config);
+			return send(msg, tid, mid);
+		}
+		default:
+	}
+};
+
+function commandsGroup() {
+	const array = [],
+		cmds = global.client.commands.values();
+	for (const cmd of cmds) {
+		const { name, commandCategory } = cmd.config;
+		const find = array.find((i) => i.commandCategory == commandCategory);
+		!find
+			? array.push({ commandCategory, commandsName: [name] })
+			: find.commandsName.push(name);
+	}
+	array.sort(sortCompare("commandsName"));
+	return array;
 }
-function S(k) {
-    return function(a, b) {
-        let i = 0;
-        if (a[k].length > b[k].length) {
-            i = 1;
-        } else if (a[k].length < b[k].length) {
-            i = -1;
-        }
-        return i * -1;
-    }
+
+function infoCmds(a) {
+	return `[ INFO - COMMANDS ]\nâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\n|â€º đŸ“” TĂªn lá»‡nh: ${a.name}\n|â€º đŸŒ´ PhiĂªn báº£n : ${a.version}\n|â€º đŸ” Quyá»n háº¡n : ${premssionTxt(a.hasPermssion)}\n|â€º đŸ‘¤ TĂ¡c giáº£ : ${a.credits}\n|â€º đŸŒ¾ MĂ´ táº£ : ${a.description}\n|â€º đŸ“ Thuá»™c nhĂ³m : ${a.commandCategory}\n|â€º đŸ“ CĂ¡ch dĂ¹ng : ${a.usages}\n|â€º â³ Thá»i gian chá» : ${a.cooldowns} giĂ¢y\n`;
 }
-function TextPr(permission) {
-    p = permission;
-    return p == 0 ? "Thành Viên" : p == 1 ? "Quản Trị Viên" : p = 2 ? "Admin Bot" : "Toàn Quyền";
+
+function premssionTxt(a) {
+	return a == 0
+		? "ThĂ nh ViĂªn"
+		: a == 1
+			? "Quáº£n Trá»‹ ViĂªn NhĂ³m"
+			: a == 2
+				? "ADMINBOT"
+				: "NgÆ°á»i Äiá»u HĂ nh Bot";
+}
+
+function prefix(a) {
+	const tidData = global.data.threadData.get(a) || {};
+	return tidData.PREFIX || global.config.PREFIX;
+}
+function sortCompare(k) {
+	return function (a, b) {
+		return (
+			(a[k].length > b[k].length ? 1 : a[k].length < b[k].length ? -1 : 0) * -1
+		);
+	};
 }
